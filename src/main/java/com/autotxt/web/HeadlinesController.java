@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -31,7 +32,13 @@ public class HeadlinesController {
         LocalDate targetDate = (date != null) ? date : LocalDate.now(ZoneId.of("Asia/Shanghai"));
         String query = (q == null) ? "" : q.trim();
 
-        List<Headline> headlines = headlinesService.getHeadlines(targetDate, query);
+        List<Headline> headlines;
+        try {
+            headlines = headlinesService.getHeadlines(targetDate, query);
+        } catch (RuntimeException e) {
+            headlines = Collections.emptyList();
+            model.addAttribute("error", "新闻源暂时不可用，请稍后重试。");
+        }
         model.addAttribute("date", targetDate);
         model.addAttribute("q", query);
         model.addAttribute("headlines", headlines);

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>邮箱订阅 · 每日热点</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --card: #1a2332;
+            --text: #e7ecf3;
+            --muted: #8b9cb3;
+            --accent: #3d8bfd;
+            --error: #f87171;
+            --ok: #34d399;
+            --divider: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, #1e3a5f 0%, var(--bg) 55%);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .card {
+            width: 100%;
+            max-width: 760px;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+        .hint { font-size: 0.9rem; color: var(--muted); line-height: 1.6; margin: 0 0 1.25rem; }
+        label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; }
+        input[type="email"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text);
+            font-size: 1rem;
+        }
+        input[type="email"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(61, 139, 253, 0.2);
+        }
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 0.9rem; align-items: end; }
+        @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+        button {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #4d9bff, var(--accent));
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #e7ecf3;
+        }
+        .btn-secondary:hover { filter: brightness(1.08); }
+        .msg {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--divider);
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .msg.ok { border-color: rgba(52, 211, 153, 0.25); background: rgba(52, 211, 153, 0.10); color: #d1fae5; }
+        .msg.warn { border-color: rgba(251, 191, 36, 0.25); background: rgba(251, 191, 36, 0.10); color: #fde68a; }
+        .foot {
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--divider);
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+        .link { color: #cfe1ff; text-decoration: none; }
+        .link:hover { text-decoration: underline; }
+        code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>邮箱订阅 · 每日 9 点推送</h1>
+    <p class="hint">
+        在这里提交邮箱后，你会在每天 <strong>09:00</strong> 自动收到<strong>前一天</strong>的「前 10 条」新闻（基于中新网“即时新闻”RSS，按时间倒序取前 10 条）。
+    </p>
+
+    <form method="post" th:action="@{/subscribe}">
+        <div class="row">
+            <div>
+                <label for="email">邮箱</label>
+                <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required/>
+            </div>
+            <div>
+                <button type="submit">提交订阅</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="msg ok" th:if="${added != null and added}">
+        已订阅：<strong th:text="${email}">name@example.com</strong>。明天早上开始会收到邮件。
+    </div>
+    <div class="msg warn" th:if="${added != null and !added}">
+        该邮箱已在订阅列表中：<strong th:text="${email}">name@example.com</strong>。
+    </div>
+    <div class="msg warn" th:if="${error != null}">
+        <strong>提交失败：</strong><span th:text="${error}">邮箱格式不正确</span>
+    </div>
+
+    <form method="post" th:action="@{/subscribe/send-yesterday}" style="margin-top:1rem;" th:if="${email != null and !#strings.isEmpty(email)}">
+        <input type="hidden" name="email" th:value="${email}"/>
+        <button class="btn-secondary" type="submit">立即发送昨日十大（测试）</button>
+    </form>
+
+    <div class="msg ok" th:if="${sendOk != null and sendOk}">
+        已发送：<strong th:text="${email}">name@example.com</strong>（日期：<span th:text="${sendDate}">2026-04-10</span>）
+    </div>
+    <div class="msg warn" th:if="${sendError != null}">
+        <strong>发送失败：</strong><span th:text="${sendError}">邮件功能未启用</span>
+    </div>
+
+    <div class="foot">
+        <div>当前订阅人数：<strong th:text="${count}">0</strong></div>
+        <div><a class="link" th:href="@{/}">返回新闻页面</a></div>
+    </div>
+</div>
+</body>
+</html>
+

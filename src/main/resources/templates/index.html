@@ -35,6 +35,28 @@
             box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .topbar h1 { margin: 0; }
+        .sub-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(61, 139, 253, 0.35);
+            background: rgba(61, 139, 253, 0.12);
+            color: #cfe1ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .sub-btn:hover { filter: brightness(1.08); }
         h1 {
             font-size: 1.35rem;
             font-weight: 600;
@@ -143,7 +165,10 @@
 </head>
 <body>
 <div class="card">
-    <h1>头条新闻 · 按日期查看</h1>
+    <div class="topbar">
+        <h1>头条新闻 · 按日期查看</h1>
+        <a class="sub-btn" th:href="@{/subscribe}">订阅邮箱</a>
+    </div>
     <p class="hint">数据源：中新网「即时新闻」RSS。选择日期后会自动展示当天的新闻条目；可选填关键词进行筛选。</p>
     <form id="searchForm" method="get" th:action="@{/}">
         <div class="grid">

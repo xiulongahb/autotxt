@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -28,6 +29,7 @@ public class HeadlinesEmailService {
     private final String subjectPrefix;
     private final String keyword;
     private final String zone;
+    private final int limit;
 
     public HeadlinesEmailService(
             JavaMailSender mailSender,
@@ -37,7 +39,8 @@ public class HeadlinesEmailService {
             @Value("${autotxt.mail.to:}") String to,
             @Value("${autotxt.mail.subjectPrefix:头条新闻}") String subjectPrefix,
             @Value("${autotxt.mail.keyword:}") String keyword,
-            @Value("${autotxt.mail.zone:Asia/Shanghai}") String zone
+            @Value("${autotxt.mail.zone:Asia/Shanghai}") String zone,
+            @Value("${autotxt.mail.limit:10}") int limit
     ) {
         this.mailSender = mailSender;
         this.headlinesService = headlinesService;
@@ -47,10 +50,15 @@ public class HeadlinesEmailService {
         this.subjectPrefix = safeTrim(subjectPrefix);
         this.keyword = safeTrim(keyword);
         this.zone = safeTrim(zone);
+        this.limit = limit;
     }
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean hasConfiguredRecipients() {
+        return !to.isEmpty();
     }
 
     public ZoneId zoneId() {
@@ -72,14 +80,31 @@ public class HeadlinesEmailService {
             throw new IllegalStateException("未配置收件人：autotxt.mail.to");
         }
 
-        List<Headline> headlines = headlinesService.getHeadlines(date, keyword);
+        List<Headline> headlines = limit(headlinesService.getHeadlines(date, keyword), limit);
         String subject = (subjectPrefix.isEmpty() ? "头条新闻" : subjectPrefix) + " " + date.format(DATE_FMT);
 
         String html = buildHtml(date, headlines, keyword);
-        sendHtml(subject, html);
+        sendHtmlTo(subject, html, parseRecipients(to));
     }
 
-    private void sendHtml(String subject, String html) {
+    public void sendHeadlinesTo(LocalDate date, List<String> recipients) {
+        if (!enabled) {
+            return;
+        }
+        if (date == null) {
+            throw new IllegalArgumentException("date 不能为空");
+        }
+        List<String> rcpt = recipients == null ? Collections.emptyList() : recipients;
+        if (rcpt.isEmpty()) {
+            return;
+        }
+        List<Headline> headlines = limit(headlinesService.getHeadlines(date, keyword), limit);
+        String subject = (subjectPrefix.isEmpty() ? "头条新闻" : subjectPrefix) + " " + date.format(DATE_FMT);
+        String html = buildHtml(date, headlines, keyword);
+        sendHtmlTo(subject, html, rcpt.toArray(new String[0]));
+    }
+
+    private void sendHtmlTo(String subject, String html, String[] to) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
@@ -87,8 +112,9 @@ public class HeadlinesEmailService {
             if (!from.isEmpty()) {
                 helper.setFrom(from);
             }
-            helper.setTo(parseRecipients(to));
-            helper.setSubject(subject);
+            helper.setTo(to);
+            // Force RFC 2047 subject encoding to UTF-8 to avoid garbled titles on some clients/servers.
+            message.setSubject(subject, StandardCharsets.UTF_8.name());
             helper.setText(html, true);
 
             mailSender.send(message);
@@ -149,6 +175,16 @@ public class HeadlinesEmailService {
 
     private static String safeTrim(String s) {
         return s == null ? "" : s.trim();
+    }
+
+    private static List<Headline> limit(List<Headline> list, int limit) {
+        if (list == null || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (limit <= 0 || list.size() <= limit) {
+            return list;
+        }
+        return new ArrayList<>(list.subList(0, limit));
     }
 
     private static String nullToEmpty(String s) {

@@ -3,3 +3,7 @@ target/
 *.iml
 .DS_Store
 **/.DS_Store
+
+# Local runtime data (subscribers, local configs)
+data/*
+!data/.gitkeep
