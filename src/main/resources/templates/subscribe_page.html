@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>订阅邮箱 · 每日热点</title>
+    <style>
+        :root {
+            --bg1: #eef4ff;
+            --bg2: #f7f9fc;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: rgba(15, 23, 42, 0.10);
+            --shadow: 0 24px 60px rgba(2, 6, 23, 0.10);
+            --primary: #16a34a;
+            --primary2: #22c55e;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+            color: var(--text);
+            background:
+                    radial-gradient(1200px 600px at 18% 28%, #dbeafe 0%, transparent 60%),
+                    radial-gradient(900px 500px at 75% 15%, #e9d5ff 0%, transparent 55%),
+                    linear-gradient(180deg, var(--bg1), var(--bg2));
+        }
+
+        .page { min-height: 100vh; display: flex; flex-direction: column; }
+
+        .header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            text-decoration: none;
+            color: inherit;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+            box-shadow: 0 10px 18px rgba(22, 163, 74, 0.25);
+            position: relative;
+        }
+
+        .brand-badge:after {
+            content: "";
+            position: absolute;
+            inset: 7px;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        .nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: var(--muted);
+            text-decoration: none;
+            padding: 0.5rem 0.65rem;
+            border-radius: 10px;
+        }
+
+        .nav a:hover { background: rgba(2, 6, 23, 0.05); color: #0f172a; }
+
+        .subscribe-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(22, 163, 74, 0.25);
+            background: rgba(22, 163, 74, 0.10);
+            color: #166534;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 1.25rem 1.25rem 2.25rem;
+        }
+
+        .layout {
+            width: 100%;
+            max-width: 980px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.80);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            padding: 1.25rem;
+        }
+
+        h1 { font-size: 1.15rem; font-weight: 800; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+        .hint { margin: 0 0 0.9rem; color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+
+        .subhead {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .count { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+
+        .emails {
+            list-style: none;
+            padding: 0;
+            margin: 0.75rem 0 0;
+            border-top: 1px solid rgba(15, 23, 42, 0.10);
+        }
+
+        .emails li {
+            padding: 0.7rem 0;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .email-left { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .email-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+
+        .pill {
+            font-size: 0.8rem;
+            color: var(--muted);
+            background: rgba(2, 6, 23, 0.04);
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 999px;
+            padding: 0.15rem 0.55rem;
+            white-space: nowrap;
+        }
+
+        .mini-btn {
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: rgba(255, 255, 255, 0.80);
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 0.35rem 0.55rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .mini-btn:hover { filter: brightness(1.02); }
+
+        .pager {
+            margin-top: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .pager a {
+            color: #0f172a;
+            text-decoration: none;
+            padding: 0.4rem 0.6rem;
+            border-radius: 10px;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            background: rgba(255, 255, 255, 0.70);
+        }
+
+        label { display: block; font-size: 0.8rem; color: #475569; margin-bottom: 0.4rem; }
+
+        input[type="email"]{
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            background: rgba(255, 255, 255, 0.92);
+            color: #0f172a;
+            font-size: 1rem;
+        }
+
+        input[type="email"]:focus{
+            outline: none;
+            border-color: rgba(34, 197, 94, 0.7);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+        }
+
+        .row { display: grid; grid-template-columns: 1fr auto; gap: 0.9rem; align-items: end; }
+        @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+
+        .btn {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(180deg, var(--primary2), var(--primary));
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn:hover { filter: brightness(1.03); }
+
+        .btn-secondary {
+            background: rgba(2, 6, 23, 0.04);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            color: #0f172a;
+        }
+
+        .msg {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            background: rgba(255, 255, 255, 0.60);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .msg.ok { border-color: rgba(22, 163, 74, 0.25); background: rgba(22, 163, 74, 0.08); color: #14532d; }
+        .msg.warn { border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.08); color: #7c2d12; }
+
+        .link { color: #0f172a; text-decoration: none; }
+        .link:hover { text-decoration: underline; }
+        form.inline { margin: 0; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-badge" aria-hidden="true"></span>
+            <span>热点速递</span>
+        </a>
+        <nav class="nav">
+            <a th:href="@{/}">首页</a>
+            <a th:href="@{/subscribe}" class="subscribe-btn">订阅邮箱</a>
+        </nav>
+    </header>
+
+    <main class="main">
+        <div class="layout">
+            <section class="panel">
+                <div class="subhead">
+                    <h1>已订阅邮箱</h1>
+                    <div class="count">共 <strong th:text="${count}">0</strong> 个</div>
+                </div>
+                <div class="hint">默认每页显示 10 个，超过自动分页。</div>
+
+                <ul class="emails" th:if="${subscribers != null and !subscribers.isEmpty()}">
+                    <li th:each="e,stat : ${subscribers}">
+                        <span class="email-left" th:text="${e}">name@example.com</span>
+                        <span class="email-actions">
+                            <span class="pill">#<span th:text="${(page - 1) * size + stat.index + 1}">1</span></span>
+                            <form class="inline" method="post" th:action="@{/subscribe/send-yesterday}">
+                                <input type="hidden" name="page" th:value="${page}"/>
+                                <input type="hidden" name="size" th:value="${size}"/>
+                                <input type="hidden" name="email" th:value="${e}"/>
+                                <button class="mini-btn" type="submit">发送</button>
+                            </form>
+                        </span>
+                    </li>
+                </ul>
+                <div class="msg warn" th:if="${subscribers == null or subscribers.isEmpty()}">当前暂无订阅邮箱。</div>
+
+                <div class="pager" th:if="${totalPages != null and totalPages > 1}">
+                    <div>第 <strong th:text="${page}">1</strong> / <strong th:text="${totalPages}">1</strong> 页</div>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <a th:if="${hasPrev}" th:href="@{/subscribe(page=${prevPage},size=${size})}">上一页</a>
+                        <a th:if="${hasNext}" th:href="@{/subscribe(page=${nextPage},size=${size})}">下一页</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h1>邮箱订阅 · 每日 9 点推送</h1>
+                <p class="hint">提交邮箱后，你会在每天 <strong>09:00</strong> 自动收到<strong>前一天</strong>的「前 10 条」新闻。</p>
+
+                <form method="post" th:action="@{/subscribe}">
+                    <input type="hidden" name="page" th:value="${page}"/>
+                    <input type="hidden" name="size" th:value="${size}"/>
+                    <div class="row">
+                        <div>
+                            <label for="email">邮箱</label>
+                            <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required
+                                   th:value="${email}"/>
+                        </div>
+                        <div>
+                            <button class="btn" type="submit">提交订阅</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="msg ok" th:if="${added != null and added}">已订阅：<strong th:text="${email}">name@example.com</strong>。</div>
+                <div class="msg warn" th:if="${added != null and !added}">该邮箱已在订阅列表中：<strong th:text="${email}">name@example.com</strong>。</div>
+                <div class="msg warn" th:if="${error != null}"><strong>提交失败：</strong><span th:text="${error}">邮箱格式不正确</span></div>
+
+                <form method="post" th:action="@{/subscribe/send-yesterday}" style="margin-top:1rem;"
+                      th:if="${email != null and !#strings.isEmpty(email)}">
+                    <input type="hidden" name="page" th:value="${page}"/>
+                    <input type="hidden" name="size" th:value="${size}"/>
+                    <input type="hidden" name="email" th:value="${email}"/>
+                    <button class="btn btn-secondary" type="submit">立即发送昨日十大（测试）</button>
+                </form>
+
+                <div class="msg ok" th:if="${sendOk != null and sendOk}">
+                    已发送：<strong th:text="${email}">name@example.com</strong>（日期：<span th:text="${sendDate}">2026-04-10</span>）
+                </div>
+                <div class="msg warn" th:if="${sendError != null}">
+                    <strong>发送失败：</strong><span th:text="${sendError}">邮件功能未启用</span>
+                </div>
+
+                <div class="pager" style="margin-top:1rem;">
+                    <a class="link" th:href="@{/}">返回新闻页面</a>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>
+
