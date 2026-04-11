@@ -1,9 +1,19 @@
-target/
-.idea/
-*.iml
-.DS_Store
-**/.DS_Store
+# Build output
+/target/
 
 # Local runtime data (subscribers, local configs)
-data/*
-!data/.gitkeep
+/data/*
+!/data/.gitkeep
+
+# Logs
+*.log
+/logs/
+
+# IDE/OS
+.DS_Store
+**/.DS_Store
+.idea/
+*.iml
+
+# Local overrides (optional)
+application-local.properties
